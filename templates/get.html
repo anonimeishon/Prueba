@@ -2,9 +2,18 @@
 <html>
 <body>
 
-<h1>Make a new hash</h1>
+<h1>Hash list</h1>
 
-<form action="/chain" method="POST"><input type="submit" value="Back"></form>
+<div>  
+{% for hashes in hashes%}
+<li>Hash: {{hashes.hash}}</li>
+{% endfor %}
+</div>
+
+
+<form action="/chain" method="POST"><input type="submit" value="New hash"></form>
+<form action="/chain/last" method="GET"><input type="submit" value="See last hash"></form>
+<form action="/api/v1/chain" method="GET"><input type="submit" value="See Json"></form>
 
 </body>
 </html>

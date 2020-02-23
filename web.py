@@ -1,16 +1,43 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from hashing import hasheo
+import sqlite3
+from makejson import main
+from flask_marshmallow import Marshmallow
+
+#Web configs
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./prueba.db'
 db = SQLAlchemy(app)
+ma = Marshmallow(app)
 
+
+#Db structure
 class posthash(db.Model):
-    id = db.Column(db.String, primary_key=True)
-    def __repr__(self):
-        return '<posthash %r>' % self.id
+    id = db.Column(db.Integer, primary_key=True)
+    hash = db.Column(db.String)
 
+
+#Helping marshamllow make the json file
+class Postschema(ma.ModelSchema):
+    class Meta:
+        model = posthash
+
+
+#for adding hashes to the db
+def addhashtodb():
+    last = posthash.query.order_by(posthash.id.desc()).first()
+    if last == None:
+        elid = 1
+    else:    
+        elid = int(last.id) + 1
+    elhash = posthash(id=elid,hash=hasheo())
+    db.session.add(elhash)
+    db.session.commit()
+
+
+#routes
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
@@ -19,17 +46,25 @@ def hello_world():
 def writehash():
 
     if request.method == 'POST':
-        elhash = posthash(id=hasheo())
-        db.session.add(elhash)
-        db.session.commit()
+        addhashtodb()
         return(render_template('post.html'))
-        #return ('<h1>Added hash</h1><form action="/chain" method="GET"><input type="submit" value="Back"></form>')
     elif request.method == 'GET':
-        return render_template('get.html')
-        #return('<form action="/chain" method="POST"><input type="submit" value="Hash"></form>', )
-        #<button type="button" onclick="alert('Hello world!')">Click Me!</button>
-        #return(posthash.query.all())
-        
+        hashes = posthash.query.all()
+        return render_template('get.html',hashes = hashes, title= "Show hashes")
+ 
+@app.route('/chain/last', methods=['GET'])
+def getlasthash():
+    last = posthash.query.order_by(posthash.id.desc()).first()
+    return render_template('last.html', last=last, title="Last hash")
+
+@app.route('/api/v1/chain')
+def showjson():
+    #main()
+    hashes = posthash.query.all()
+    
+    hash_schema = Postschema(many=True)
+    output = hash_schema.dump(hashes)
+    return(jsonify({'hashes' : output}))
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

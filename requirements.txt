@@ -1,2 +1,7 @@
 Flask
 flask_sqlalchemy
+simplejson
+sqlobject
+sqlite3
+flask-marshmallow
+marshmallow-sqlalchemy
